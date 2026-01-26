@@ -1,0 +1,19 @@
+Device ID: CORE-SW-02
+IP address: 10.0.0.2
+Platform: cisco WS-C6509,  Capabilities: Router Switch IGMP 
+Interface: GigabitEthernet1/1,  Port ID (outgoing port): GigabitEthernet1/1
+-------------------------
+Device ID: DIST-SW-01
+IP address: 10.0.1.1
+Platform: cisco WS-C3850,  Capabilities: Switch IGMP 
+Interface: GigabitEthernet2/1,  Port ID (outgoing port): GigabitEthernet1/1
+-------------------------
+Device ID: DIST-SW-02
+IP address: 10.0.1.2
+Platform: cisco WS-C3850,  Capabilities: Switch IGMP 
+Interface: GigabitEthernet2/2,  Port ID (outgoing port): GigabitEthernet1/1
+-------------------------
+Device ID: EDGE-RTR-01
+IP address: 192.168.1.1
+Platform: cisco ISR4451,  Capabilities: Router
+Interface: GigabitEthernet3/1,  Port ID (outgoing port): GigabitEthernet0/0

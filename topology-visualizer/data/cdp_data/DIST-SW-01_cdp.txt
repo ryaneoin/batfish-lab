@@ -1,0 +1,14 @@
+Device ID: CORE-SW-01
+IP address: 10.0.0.1
+Platform: cisco WS-C6509,  Capabilities: Router Switch IGMP 
+Interface: GigabitEthernet1/1,  Port ID (outgoing port): GigabitEthernet2/1
+-------------------------
+Device ID: CORE-SW-02
+IP address: 10.0.0.2
+Platform: cisco WS-C6509,  Capabilities: Router Switch IGMP 
+Interface: GigabitEthernet1/2,  Port ID (outgoing port): GigabitEthernet2/1
+-------------------------
+Device ID: ACC-SW-01
+IP address: 10.0.2.1
+Platform: cisco WS-C2960X,  Capabilities: Switch IGMP 
+Interface: GigabitEthernet2/1,  Port ID (outgoing port): GigabitEthernet0/1

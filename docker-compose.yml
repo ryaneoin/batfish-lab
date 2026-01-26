@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # Batfish - Network Analysis Engine
+  batfish:
+    image: batfish/batfish:latest
+    container_name: batfish
+    ports:
+      - "9996:9996"  # Batfish coordinator
+      - "9997:9997"  # Batfish worker
+    networks:
+      - batfish-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9996/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Loki - Log Aggregation
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-stack/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - batfish-net
+    restart: unless-stopped
+
+  # Promtail - Log Collector (watches Batfish CSV outputs)
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - ./loki-stack/promtail-config.yaml:/etc/promtail/config.yaml
+      - ./batfish-analyzer/output:/var/log/batfish:ro
+    command: -config.file=/etc/promtail/config.yaml
+    networks:
+      - batfish-net
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  # Grafana - Visualization Dashboard
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./loki-stack/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./loki-stack/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./loki-stack/dashboards:/var/lib/grafana/dashboards
+      - grafana-data:/var/lib/grafana
+    networks:
+      - batfish-net
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+networks:
+  batfish-net:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:

@@ -1,0 +1,38 @@
+version: "3.8"
+services:
+  loki:
+    image: grafana/loki:2.9.3
+    ports: ["3100:3100"]
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks: [loki]
+  
+  promtail:
+    image: grafana/promtail:2.9.3
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/config.yaml
+      - ../batfish-analyzer/output:/var/log/batfish:ro
+    command: -config.file=/etc/promtail/config.yaml
+    networks: [loki]
+    depends_on: [loki]
+  
+  grafana:
+    image: grafana/grafana:10.2.3
+    ports: ["3000:3000"]
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./dashboards:/var/lib/grafana/dashboards
+    networks: [loki]
+    depends_on: [loki]
+
+networks:
+  loki:
+volumes:
+  loki-data:
+  grafana-data:

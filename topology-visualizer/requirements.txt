@@ -1,0 +1,6 @@
+networkx==3.2.1
+plotly==5.18.0
+pandas==2.1.4
+ciscoconfparse==1.9.41
+kaleido==0.2.1
+PyYAML>=6.0

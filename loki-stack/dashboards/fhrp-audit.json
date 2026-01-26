@@ -1,0 +1,48 @@
+{
+  "title": "Batfish FHRP Audit",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total FHRP Instances",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{
+        "expr": "count(count by (hostname,interface_name,protocol,group_id) ({fhrp=\"true\"}))"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "All FHRP Configs",
+      "type": "logs",
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 4},
+      "targets": [{
+        "expr": "{fhrp=\"true\"}"
+      }],
+      "options": {
+        "showLabels": true,
+        "showTime": false
+      }
+    },
+    {
+      "id": 3,
+      "title": "FHRP by Protocol",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "targets": [{
+        "expr": "sum by (protocol) (count_over_time({fhrp=\"true\"}[5m]))"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "FHRP by Hostname",
+      "type": "piechart", 
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "targets": [{
+        "expr": "sum by (hostname) (count_over_time({fhrp=\"true\"}[5m]))"
+      }]
+    }
+  ],
+  "tags": ["batfish", "fhrp"],
+  "timezone": "",
+  "version": 1
+}

@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  ciscoconfparse-analyzer:
+    build: .
+    container_name: ccp-analyzer
+    volumes:
+      # Mount the configs directory from parent folder
+      - ../configs:/configs:ro
+      # Mount output directory for reports
+      - ./output:/app/output
+    environment:
+      - CONFIGS_DIR=/configs
+      - OUTPUT_DIR=/app/output
+    networks:
+      - analysis-net
+
+networks:
+  analysis-net:
+    driver: bridge

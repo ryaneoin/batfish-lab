@@ -1,0 +1,38 @@
+server:
+  http_listen_port: 9080
+positions:
+  filename: /tmp/positions.yaml
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: fhrp_unified
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: batfish_fhrp
+          __path__: /var/log/batfish/fhrp_unified_*.csv
+    
+    pipeline_stages:
+      # Drop header line - drops if regex matches
+      - drop:
+          expression: '^Interface,Group_ID'
+          drop_counter_reason: csv_header
+      
+      # Parse CSV columns
+      - regex:
+          expression: '^(?P<interface>[^,]*),(?P<group_id>[^,]*),(?P<priority>[^,]*),(?P<preempt>[^,]*),(?P<enabled>[^,]*),(?P<hostname>[^,]*),(?P<interface_name>[^,]*),(?P<protocol>[^,]*)'
+      
+      # Add extracted fields as labels
+      - labels:
+          hostname:
+          interface_name:
+          protocol:
+          group_id:
+          priority:
+          preempt:
+          enabled:
+      
+      # Add custom static label
+      - static_labels:
+          fhrp: "true"

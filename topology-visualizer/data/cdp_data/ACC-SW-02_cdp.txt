@@ -1,0 +1,4 @@
+Device ID: DIST-SW-02
+IP address: 10.0.1.2
+Platform: cisco WS-C3850,  Capabilities: Switch IGMP 
+Interface: GigabitEthernet0/1,  Port ID (outgoing port): GigabitEthernet2/1

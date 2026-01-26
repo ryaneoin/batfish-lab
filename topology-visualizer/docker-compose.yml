@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  topology-viz:
+    build: .
+    container_name: network-topology-visualizer
+    volumes:
+      - ./data:/app/data:ro
+      - ../configs:/app/configs:ro
+      - ./output:/app/output
+      - ./parsers:/app/parsers:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - netops
+
+networks:
+  netops:
+    driver: bridge

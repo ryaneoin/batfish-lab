@@ -1,0 +1,41 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific - ignore generated files
+topology-visualizer/output/*.html
+topology-visualizer/output/*.json
+ciscoconfparse-analyzer/output/*
+batfish-analyzer/output/*
+
+# But keep the output directory structure
+!topology-visualizer/output/.gitkeep
+!ciscoconfparse-analyzer/output/.gitkeep
+!batfish-analyzer/output/.gitkeep
+
+# Docker
+*.tar.gz
+
+# Logs
+*.log
