@@ -1,0 +1,68 @@
+# Device Inventory for Network Collection
+# Edit this file with your actual device details
+
+devices:
+  # Core Switches
+  - hostname: core-sw-01
+    host: 192.168.1.10
+    device_type: cisco_ios
+    username: admin
+    password: ${NET_PASSWORD}  # Or use environment variable
+    secret: ${NET_SECRET}      # Enable password
+    timeout: 30
+    
+  - hostname: core-sw-02
+    host: 192.168.1.11
+    device_type: cisco_ios
+    username: admin
+    password: ${NET_PASSWORD}
+    secret: ${NET_SECRET}
+    
+  # Distribution Layer
+  - hostname: dist-sw-01
+    host: 192.168.1.20
+    device_type: cisco_ios
+    username: admin
+    use_keys: true
+    key_file: ~/.ssh/id_rsa
+    
+  # Edge Routers
+  - hostname: edge-rtr-01
+    host: 192.168.1.1
+    device_type: cisco_ios
+    username: admin
+    password: ${NET_PASSWORD}
+    secret: ${NET_SECRET}
+    
+  # Nexus switches (if applicable)
+  - hostname: nexus-01
+    host: 192.168.1.50
+    device_type: cisco_nxos
+    username: admin
+    password: ${NET_PASSWORD}
+
+# Supported device_type values:
+# - cisco_ios
+# - cisco_xe
+# - cisco_nxos
+# - cisco_xr
+# - cisco_asa
+# - arista_eos
+# - juniper_junos
+# - etc. (see Netmiko documentation)
+
+# Authentication options:
+# 1. Direct credentials (not recommended for production)
+#    username: admin
+#    password: mypassword
+#    secret: enablepassword
+#
+# 2. Environment variables (recommended)
+#    username: admin
+#    password: ${NET_PASSWORD}
+#    secret: ${NET_SECRET}
+#    Set these with: export NET_PASSWORD=xxx NET_SECRET=yyy
+#
+# 3. SSH keys (most secure)
+#    use_keys: true
+#    key_file: ~/.ssh/id_rsa

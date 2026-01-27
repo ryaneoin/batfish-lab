@@ -1,0 +1,3 @@
+# Requirements for Network Device Collection Script
+netmiko>=4.1.0
+pyyaml>=6.0
