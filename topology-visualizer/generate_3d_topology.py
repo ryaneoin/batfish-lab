@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-3D Network Topology Visualization
+3D Network Topology Visualization with Hostname-Based Layer Classification
 Generates interactive 3D topology from existing JSON files
 """
 
@@ -8,56 +8,36 @@ import json
 import networkx as nx
 import plotly.graph_objects as go
 from pathlib import Path
+import sys
+import re
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
 OUTPUT_DIR = SCRIPT_DIR / 'output'
 
-# Add near the top of generate_3d_topology.py
-from parsers.hostname_parser import HostnameParser
+# Add parsers to path
+sys.path.insert(0, str(SCRIPT_DIR / 'parsers'))
 
-def create_layered_3d_layout(graph):
-    """Create 3D layout with hierarchical layers using hostname parsing"""
-    pos_3d = {}
-    
-    # Initialize hostname parser
-    parser = HostnameParser()
-    
-    # Group nodes by parsed layer
-    nodes_by_layer = {}
-    for node in graph.nodes():
-        # Parse hostname to get layer
-        parsed = parser.parse(node)
-        layer = parsed['layer']
-        z_level = parsed['z_level']
-        
-        if layer not in nodes_by_layer:
-            nodes_by_layer[layer] = {'nodes': [], 'z': z_level}
-        nodes_by_layer[layer]['nodes'].append(node)
-    
-    # Use 2D spring layout for X,Y coordinates per layer
-    for layer, data in nodes_by_layer.items():
-        nodes = data['nodes']
-        z = data['z']
-        
-        if not nodes:
-            continue
-        
-        # Create subgraph for this layer
-        subgraph = graph.subgraph(nodes)
-        
-        # Get 2D positions
-        if len(nodes) > 1:
-            pos_2d = nx.spring_layout(subgraph, k=2, iterations=50, seed=42)
-        else:
-            pos_2d = {nodes[0]: (0, 0)}
-        
-        # Add Z coordinate
-        for node in nodes:
-            x, y = pos_2d[node]
-            pos_3d[node] = (x, y, z)
-    
-    return pos_3d
+# Try to import hostname parser, fall back to simple classification
+try:
+    from hostname_parser import HostnameParser
+    USE_HOSTNAME_PARSER = True
+except ImportError:
+    USE_HOSTNAME_PARSER = False
+    print("Warning: hostname_parser not found, using simple classification")
+
+
+def classify_device_simple(node_name, node_type):
+    """Simple fallback classification based on node_type from CDP"""
+    z_levels = {
+        'router': 3.0,
+        'core': 2.0,
+        'distribution': 1.0,
+        'access': 0.0,
+        'unknown': 1.5
+    }
+    return z_levels.get(node_type, 1.5)
+
 
 def load_topology_data():
     """Load topology data from JSON files"""
@@ -106,41 +86,65 @@ def load_topology_data():
 
 
 def create_layered_3d_layout(graph):
-    """Create 3D layout with hierarchical layers"""
+    """Create 3D layout with hierarchical layers using hostname parsing"""
     pos_3d = {}
     
-    # Assign Z-levels based on device type
-    z_levels = {
-        'router': 3.0,      # Top layer - Edge routers
-        'core': 2.0,        # Core layer
-        'distribution': 1.0, # Distribution layer
-        'access': 0.0       # Bottom layer
-    }
+    if USE_HOSTNAME_PARSER:
+        print("Using hostname-based layer classification...")
+        parser = HostnameParser()
+        
+        # Group nodes by parsed layer
+        nodes_by_layer = {}
+        for node in graph.nodes():
+            # Parse hostname to get layer
+            parsed = parser.parse(node)
+            layer = parsed['layer']
+            z_level = parsed['z_level']
+            
+            if layer not in nodes_by_layer:
+                nodes_by_layer[layer] = {'nodes': [], 'z': z_level}
+            nodes_by_layer[layer]['nodes'].append(node)
+            
+            # Debug output
+            if parsed['valid']:
+                print(f"  {node:20} → {parsed['location']:4}-{parsed['role']:3}-{parsed['type']:2} → Layer: {layer:12} (Z={z_level})")
+            else:
+                print(f"  {node:20} → UNPARSED → Layer: {layer:12} (Z={z_level})")
+    else:
+        print("Using simple node_type classification...")
+        # Fallback: group by node_type from CDP
+        nodes_by_layer = {}
+        for node in graph.nodes():
+            node_type = graph.nodes[node].get('node_type', 'unknown')
+            z_level = classify_device_simple(node, node_type)
+            layer = node_type
+            
+            if layer not in nodes_by_layer:
+                nodes_by_layer[layer] = {'nodes': [], 'z': z_level}
+            nodes_by_layer[layer]['nodes'].append(node)
     
-    # Group nodes by type
-    nodes_by_type = {}
-    for node in graph.nodes():
-        node_type = graph.nodes[node].get('node_type', 'unknown')
-        if node_type not in nodes_by_type:
-            nodes_by_type[node_type] = []
-        nodes_by_type[node_type].append(node)
+    print(f"\nLayer distribution:")
+    for layer, data in sorted(nodes_by_layer.items(), key=lambda x: x[1]['z'], reverse=True):
+        print(f"  Z={data['z']}: {layer:12} - {len(data['nodes'])} devices")
     
     # Use 2D spring layout for X,Y coordinates per layer
-    for node_type, nodes in nodes_by_type.items():
+    for layer, data in nodes_by_layer.items():
+        nodes = data['nodes']
+        z = data['z']
+        
         if not nodes:
             continue
         
         # Create subgraph for this layer
         subgraph = graph.subgraph(nodes)
         
-        # Get 2D positions
+        # Get 2D positions with more spacing
         if len(nodes) > 1:
-            pos_2d = nx.spring_layout(subgraph, k=2, iterations=50, seed=42)
+            pos_2d = nx.spring_layout(subgraph, k=3, iterations=100, seed=42)
         else:
             pos_2d = {nodes[0]: (0, 0)}
         
         # Add Z coordinate
-        z = z_levels.get(node_type, 1.5)
         for node in nodes:
             x, y = pos_2d[node]
             pos_3d[node] = (x, y, z)
@@ -153,7 +157,7 @@ def visualize_3d_topology(graphs):
     combined_graph = graphs['combined']
     
     # Create 3D layout
-    print("Creating 3D layout...")
+    print("\nCreating 3D layout...")
     pos_3d = create_layered_3d_layout(combined_graph)
     
     # Separate edges by type
@@ -232,18 +236,21 @@ def visualize_3d_topology(graphs):
             showlegend=True
         ))
     
-    # Create nodes
+    # Create nodes with colors by layer
     node_x, node_y, node_z = [], [], []
     node_text = []
     node_color = []
     
     color_map = {
-        'router': '#FF6B6B',      # Red
-        'core': '#4ECDC4',        # Teal
-        'distribution': '#95E1D3', # Light teal
-        'access': '#F38181',      # Pink
-        'unknown': '#AAAAAA'      # Gray
+        'router': '#FF6B6B',      # Red - Edge/Internet
+        'core': '#4ECDC4',        # Teal - Core
+        'distribution': '#95E1D3', # Light teal - Distribution
+        'access': '#F38181',      # Pink - Access
+        'unknown': '#AAAAAA'      # Gray - Unknown
     }
+    
+    if USE_HOSTNAME_PARSER:
+        parser = HostnameParser()
     
     for node in combined_graph.nodes():
         if node in pos_3d:
@@ -253,8 +260,13 @@ def visualize_3d_topology(graphs):
             node_z.append(z)
             node_text.append(node)
             
-            node_type = combined_graph.nodes[node].get('node_type', 'unknown')
-            node_color.append(color_map.get(node_type, '#AAAAAA'))
+            # Get layer from hostname parser or fallback to node_type
+            if USE_HOSTNAME_PARSER:
+                layer = parser.get_layer(node)
+            else:
+                layer = combined_graph.nodes[node].get('node_type', 'unknown')
+            
+            node_color.append(color_map.get(layer, '#AAAAAA'))
     
     # Node trace
     traces.append(go.Scatter3d(
@@ -262,11 +274,11 @@ def visualize_3d_topology(graphs):
         mode='markers+text',
         text=node_text,
         textposition='top center',
-        textfont=dict(size=10, color='black'),
+        textfont=dict(size=8, color='black'),
         marker=dict(
-            size=12,
+            size=10,
             color=node_color,
-            line=dict(color='white', width=2)
+            line=dict(color='white', width=1)
         ),
         hovertext=node_text,
         hoverinfo='text',
@@ -279,8 +291,8 @@ def visualize_3d_topology(graphs):
     
     fig.update_layout(
         title=dict(
-            text='3D Network Topology (Drag to Rotate)',
-            font=dict(size=20)
+            text='3D Network Topology - Layer-Based Layout<br><sub>Drag to rotate | Scroll to zoom</sub>',
+            font=dict(size=18)
         ),
         showlegend=True,
         legend=dict(
@@ -311,7 +323,7 @@ def visualize_3d_topology(graphs):
                 zeroline=False,
                 showticklabels=True,
                 title='Network Layer',
-                ticktext=['Access', 'Distribution', 'Core', 'Edge'],
+                ticktext=['Access/Private', 'Distribution', 'Core', 'Edge/Internet'],
                 tickvals=[0, 1, 2, 3],
                 showbackground=True,
                 backgroundcolor='#F5F5F5'
@@ -321,14 +333,14 @@ def visualize_3d_topology(graphs):
                 eye=dict(x=1.5, y=1.5, z=1.2)
             )
         ),
-        margin=dict(l=0, r=0, b=0, t=40),
+        margin=dict(l=0, r=0, b=0, t=60),
         hovermode='closest'
     )
     
     # Save
     output_file = OUTPUT_DIR / 'combined_topology_3d.html'
     fig.write_html(output_file)
-    print(f"✓ 3D topology visualization saved to {output_file}")
+    print(f"\n✓ 3D topology visualization saved to {output_file}")
     
     return output_file
 
@@ -345,11 +357,11 @@ def main():
     
     if not graphs['combined'].nodes():
         print("❌ No topology data found!")
-        print("   Run: python run_pipeline.py first")
+        print("   Run: python run_pipeline_nxos.py first")
         return
     
     print(f"  ✓ Loaded {len(graphs['combined'].nodes())} devices")
-    print(f"  ✓ Loaded {len(graphs['combined'].edges())} connections")
+    print(f"  ✓ Loaded {len(graphs['combined'].edges())} connections\n")
     
     # Generate 3D visualization
     output_file = visualize_3d_topology(graphs)
@@ -358,7 +370,10 @@ def main():
     print("  ✅ Complete!")
     print("="*60)
     print(f"\nOpen: {output_file}")
-    print("\n💡 Tip: Click and drag to rotate the 3D topology")
+    print("\n💡 Tips:")
+    print("   - Click and drag to rotate")
+    print("   - Scroll to zoom")
+    print("   - Layers: Z=3 (Edge), Z=2 (Core), Z=1 (Dist), Z=0 (Access)")
     print()
 
 
