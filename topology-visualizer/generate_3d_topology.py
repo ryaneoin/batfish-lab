@@ -13,6 +13,52 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).parent
 OUTPUT_DIR = SCRIPT_DIR / 'output'
 
+# Add near the top of generate_3d_topology.py
+from parsers.hostname_parser import HostnameParser
+
+def create_layered_3d_layout(graph):
+    """Create 3D layout with hierarchical layers using hostname parsing"""
+    pos_3d = {}
+    
+    # Initialize hostname parser
+    parser = HostnameParser()
+    
+    # Group nodes by parsed layer
+    nodes_by_layer = {}
+    for node in graph.nodes():
+        # Parse hostname to get layer
+        parsed = parser.parse(node)
+        layer = parsed['layer']
+        z_level = parsed['z_level']
+        
+        if layer not in nodes_by_layer:
+            nodes_by_layer[layer] = {'nodes': [], 'z': z_level}
+        nodes_by_layer[layer]['nodes'].append(node)
+    
+    # Use 2D spring layout for X,Y coordinates per layer
+    for layer, data in nodes_by_layer.items():
+        nodes = data['nodes']
+        z = data['z']
+        
+        if not nodes:
+            continue
+        
+        # Create subgraph for this layer
+        subgraph = graph.subgraph(nodes)
+        
+        # Get 2D positions
+        if len(nodes) > 1:
+            pos_2d = nx.spring_layout(subgraph, k=2, iterations=50, seed=42)
+        else:
+            pos_2d = {nodes[0]: (0, 0)}
+        
+        # Add Z coordinate
+        for node in nodes:
+            x, y = pos_2d[node]
+            pos_3d[node] = (x, y, z)
+    
+    return pos_3d
+
 def load_topology_data():
     """Load topology data from JSON files"""
     graphs = {
