@@ -504,20 +504,21 @@ def visualize_3d_topology_enhanced(graphs, datacenter=None):
             xaxis=dict(
                 showgrid=False,
                 gridcolor='#F0F0F0',
-                zeroline=True,
+                zeroline=False,
                 zerolinecolor='#888',
                 zerolinewidth=2,
                 showticklabels=True,
-                title='Lane Position',
+                title='',
                 tickmode='linear',
                 tick0=-20,
                 dtick=5,
-                showspikes=False
+                showspikes=False,
+                showbackground=False
             ),
             yaxis=dict(
                 showgrid=False,
                 gridcolor='#F0F0F0',
-                zeroline=True,
+                zeroline=False,
                 zerolinecolor='#888',
                 showticklabels=False,
                 title='',
@@ -528,15 +529,14 @@ def visualize_3d_topology_enhanced(graphs, datacenter=None):
                 showgrid=False,
                 gridcolor='#E0E0E0',
                 zeroline=False,
-                showticklabels=True,
-                title='Network Layer (Z)',
+                showticklabels=False,
+                title='',
                 ticktext=z_labels,
                 tickvals=z_levels,
-                showbackground=True,
-                backgroundcolor='#F5F5F5',
+                showbackground=False,
                 showspikes=False
             ),
-            bgcolor='white',
+            bgcolor='rgba(0,0,0,0)',
             camera=dict(
                 eye=dict(x=1.5, y=1.5, z=1.2)
             )
